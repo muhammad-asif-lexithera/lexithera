@@ -1,12 +1,17 @@
 /**
  * WebRTC Video Chat Client Library
  * Handles peer-to-peer video/audio connections via WebRTC
- * Uses Socket.io for signaling
+ * Uses Supabase Realtime Broadcast for signaling (replaces Socket.io)
  */
+
+const SUPABASE_URL = 'https://hxruirfxplqmaosnbovg.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_5t5VI3IgviU5UmPVQhSfyQ_0EAui4pk';
 
 class VideoChat {
     constructor(config) {
-        this.socket = null;
+        this.supabase = null;
+        this.channel = null;
+        this.presenceChannel = null;
         this.peerConnection = null;
         this.localStream = null;
         this.remoteStream = null;
@@ -14,7 +19,6 @@ class VideoChat {
         this.userId = String(config.userId);
         this.role = config.role;
         this.userName = config.userName;
-        this.serverUrl = config.serverUrl || 'http://localhost:3001';
 
         // Callbacks
         this.onLocalStream = config.onLocalStream || (() => { });
@@ -36,98 +40,136 @@ class VideoChat {
     }
 
     /**
-     * Initialize the video chat - connect to signaling server
+     * Initialize Supabase Realtime signaling
      */
     async initialize() {
         try {
-            // Load Socket.io client library
-            if (typeof io === 'undefined') {
-                throw new Error('Socket.io client library not loaded');
+            // Initialize Supabase client (from CDN global)
+            if (typeof window.supabase === 'undefined' || typeof window.supabase.createClient === 'undefined') {
+                throw new Error('Supabase client library not loaded. Make sure the CDN script is included.');
             }
 
-            // Connect to signaling server
-            this.socket = io(this.serverUrl);
+            this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                realtime: { params: { eventsPerSecond: 20 } }
+            });
 
-            this.socket.on('connect', () => {
-                console.log('✅ Connected to signaling server');
-                // Register with server
-                this.socket.emit('user:join', {
-                    userId: this.userId,
-                    role: this.role,
-                    name: this.userName
+            // Subscribe to the global presence channel for user list
+            this.presenceChannel = this.supabase.channel('lexithera-presence', {
+                config: { presence: { key: this.userId } }
+            });
+
+            this.presenceChannel
+                .on('presence', { event: 'sync' }, () => {
+                    const state = this.presenceChannel.presenceState();
+                    const users = Object.values(state).flat().map(u => ({
+                        userId: u.userId,
+                        name: u.name,
+                        role: u.role,
+                        inCall: u.inCall || false
+                    }));
+                    this.onUserListUpdate(users);
+                })
+                .subscribe(async (status) => {
+                    if (status === 'SUBSCRIBED') {
+                        await this.presenceChannel.track({
+                            userId: this.userId,
+                            name: this.userName,
+                            role: this.role,
+                            inCall: false
+                        });
+                        console.log('✅ Connected to Supabase Realtime (presence)');
+                    }
                 });
-            });
 
-            // Handle incoming call
-            this.socket.on('call:incoming', (data) => {
-                this.onCallIncoming({
-                    callerId: data.callerId,
-                    callerName: data.callerName,
-                    callerRole: data.callerRole,
-                    roomId: data.roomId
-                });
-            });
+            // Subscribe to the personal signaling channel (to receive incoming call invitations)
+            const personalChannel = this.supabase.channel(`user-${this.userId}`);
+            personalChannel
+                .on('broadcast', { event: 'call:incoming' }, ({ payload }) => {
+                    this.onCallIncoming({
+                        callerId: payload.callerId,
+                        callerName: payload.callerName,
+                        callerRole: payload.callerRole,
+                        roomId: payload.roomId
+                    });
+                })
+                .subscribe();
 
-            // Handle call accepted
-            this.socket.on('call:accepted', async ({ roomId }) => {
-                console.log('✅ Call accepted');
-                this.roomId = roomId;
-                await this.createOffer();
-            });
+            this._personalChannel = personalChannel;
 
-            // Handle call rejected
-            this.socket.on('call:rejected', () => {
-                this.onError('Call was rejected');
-                this.endCall();
-            });
-
-            // Handle call ended
-            this.socket.on('call:ended', ({ reason }) => {
-                console.log('Call ended:', reason);
-                this.onCallEnded(reason);
-                this.cleanup();
-            });
-
-            // Handle WebRTC offer
-            this.socket.on('webrtc:offer', async ({ offer }) => {
-                await this.handleOffer(offer);
-            });
-
-            // Handle WebRTC answer
-            this.socket.on('webrtc:answer', async ({ answer }) => {
-                await this.handleAnswer(answer);
-            });
-
-            // Handle ICE candidate
-            this.socket.on('webrtc:ice-candidate', async ({ candidate }) => {
-                await this.handleIceCandidate(candidate);
-            });
-
-            // Handle user list update
-            this.socket.on('users:list', (users) => {
-                this.onUserListUpdate(users);
-            });
-
-            // Handle incoming chat messages
-            this.socket.on('chat:message', (data) => {
-                this.onChatMessage(data);
-            });
-
-            // Handle incoming voice messages
-            this.socket.on('chat:voice', (data) => {
-                this.onVoiceMessage(data);
-            });
-
-            // Handle errors
-            this.socket.on('call:error', ({ message }) => {
-                this.onError(message);
-            });
-
-            console.log('✅ VideoChat initialized');
+            console.log('✅ VideoChat initialized with Supabase Realtime');
         } catch (error) {
             this.onError('Failed to initialize: ' + error.message);
             throw error;
         }
+    }
+
+    /**
+     * Join a signaling room channel and set up WebRTC event listeners
+     */
+    async _joinRoomChannel(roomId) {
+        // Leave old channel if any
+        if (this.channel) {
+            await this.supabase.removeChannel(this.channel);
+        }
+
+        this.roomId = roomId;
+        this.channel = this.supabase.channel(`room-${roomId}`, {
+            config: { broadcast: { self: false } }
+        });
+
+        this.channel
+            .on('broadcast', { event: 'call:accepted' }, async ({ payload }) => {
+                console.log('✅ Call accepted');
+                await this.createOffer();
+            })
+            .on('broadcast', { event: 'call:rejected' }, () => {
+                this.onError('Call was rejected');
+                this.endCall();
+            })
+            .on('broadcast', { event: 'call:ended' }, ({ payload }) => {
+                console.log('Call ended:', payload.reason);
+                this.onCallEnded(payload.reason);
+                this.cleanup();
+            })
+            .on('broadcast', { event: 'webrtc:offer' }, async ({ payload }) => {
+                await this.handleOffer(payload.offer);
+            })
+            .on('broadcast', { event: 'webrtc:answer' }, async ({ payload }) => {
+                await this.handleAnswer(payload.answer);
+            })
+            .on('broadcast', { event: 'webrtc:ice-candidate' }, async ({ payload }) => {
+                await this.handleIceCandidate(payload.candidate);
+            })
+            .on('broadcast', { event: 'chat:message' }, ({ payload }) => {
+                this.onChatMessage(payload);
+            })
+            .on('broadcast', { event: 'chat:voice' }, ({ payload }) => {
+                this.onVoiceMessage(payload);
+            })
+            .subscribe();
+    }
+
+    /**
+     * Send a broadcast event on the room channel
+     */
+    _sendToRoom(event, payload) {
+        if (!this.channel) return;
+        this.channel.send({ type: 'broadcast', event, payload });
+    }
+
+    /**
+     * Send a broadcast event to a specific user's personal channel
+     */
+    _sendToUser(targetUserId, event, payload) {
+        const targetChannel = this.supabase.channel(`user-${targetUserId}`);
+        // We need to subscribe briefly, send, then remove
+        targetChannel.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+                targetChannel.send({ type: 'broadcast', event, payload });
+                // Brief delay then cleanup
+                setTimeout(() => this.supabase.removeChannel(targetChannel), 1000);
+            }
+        });
     }
 
     /**
@@ -142,7 +184,7 @@ class VideoChat {
             return this.localStream;
         } catch (error) {
             console.error('❌ startLocalMedia error:', error);
-            
+
             // If video failed but audio was requested, try audio-only fallback
             if (constraints.video && constraints.audio) {
                 console.warn('⚠️ Video source failed, attempting audio-only fallback...');
@@ -158,7 +200,7 @@ class VideoChat {
                     throw audioError;
                 }
             }
-            
+
             this.onError('Failed to access media: ' + error.message);
             throw error;
         }
@@ -173,12 +215,25 @@ class VideoChat {
             await this.startLocalMedia();
 
             // Generate room ID
-            this.roomId = `room_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const roomId = `room_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-            // Send initiate call signal
-            this.socket.emit('call:initiate', {
-                targetUserId,
-                roomId: this.roomId
+            // Join the room channel to listen for accepted/rejected signals
+            await this._joinRoomChannel(roomId);
+
+            // Update presence to show we're in a call
+            await this.presenceChannel.track({
+                userId: this.userId,
+                name: this.userName,
+                role: this.role,
+                inCall: true
+            });
+
+            // Send call:incoming signal directly to the target user's personal channel
+            this._sendToUser(targetUserId, 'call:incoming', {
+                callerId: this.userId,
+                callerName: this.userName,
+                callerRole: this.role,
+                roomId
             });
 
             console.log('📞 Call initiated to:', targetUserId);
@@ -193,13 +248,22 @@ class VideoChat {
      */
     async acceptCall(roomId) {
         try {
-            this.roomId = roomId;
-
             // Start local media
             await this.startLocalMedia();
 
-            // Send accept signal
-            this.socket.emit('call:accept', { roomId });
+            // Join the room channel
+            await this._joinRoomChannel(roomId);
+
+            // Update presence
+            await this.presenceChannel.track({
+                userId: this.userId,
+                name: this.userName,
+                role: this.role,
+                inCall: true
+            });
+
+            // Notify the room that call is accepted
+            this._sendToRoom('call:accepted', { roomId });
 
             console.log('✅ Call accepted');
         } catch (error) {
@@ -211,9 +275,17 @@ class VideoChat {
     /**
      * Reject an incoming call
      */
-    rejectCall(roomId) {
-        this.socket.emit('call:reject', { roomId });
+    async rejectCall(roomId) {
+        // Briefly join the room just to send rejected signal
+        await this._joinRoomChannel(roomId);
+        this._sendToRoom('call:rejected', { roomId });
         console.log('❌ Call rejected');
+        // Leave the room
+        if (this.channel) {
+            await this.supabase.removeChannel(this.channel);
+            this.channel = null;
+            this.roomId = null;
+        }
     }
 
     /**
@@ -241,10 +313,10 @@ class VideoChat {
             console.log('🎥 Remote track added:', event.track.kind);
         };
 
-        // Handle ICE candidates
+        // Handle ICE candidates — send via Supabase
         this.peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
-                this.socket.emit('webrtc:ice-candidate', {
+                this._sendToRoom('webrtc:ice-candidate', {
                     candidate: event.candidate,
                     roomId: this.roomId
                 });
@@ -274,10 +346,7 @@ class VideoChat {
             const offer = await this.peerConnection.createOffer();
             await this.peerConnection.setLocalDescription(offer);
 
-            this.socket.emit('webrtc:offer', {
-                offer,
-                roomId: this.roomId
-            });
+            this._sendToRoom('webrtc:offer', { offer, roomId: this.roomId });
 
             console.log('📤 Offer sent');
         } catch (error) {
@@ -300,10 +369,7 @@ class VideoChat {
             const answer = await this.peerConnection.createAnswer();
             await this.peerConnection.setLocalDescription(answer);
 
-            this.socket.emit('webrtc:answer', {
-                answer,
-                roomId: this.roomId
-            });
+            this._sendToRoom('webrtc:answer', { answer, roomId: this.roomId });
 
             console.log('📥 Offer received, answer sent');
         } catch (error) {
@@ -369,9 +435,18 @@ class VideoChat {
      */
     endCall() {
         if (this.roomId) {
-            this.socket.emit('call:end', { roomId: this.roomId });
+            this._sendToRoom('call:ended', { roomId: this.roomId, reason: 'User ended call' });
         }
         this.cleanup();
+        // Update presence — no longer in call
+        if (this.presenceChannel) {
+            this.presenceChannel.track({
+                userId: this.userId,
+                name: this.userName,
+                role: this.role,
+                inCall: false
+            });
+        }
     }
 
     /**
@@ -390,7 +465,12 @@ class VideoChat {
             this.peerConnection = null;
         }
 
-        // Clear remote stream
+        // Leave room channel
+        if (this.channel && this.supabase) {
+            this.supabase.removeChannel(this.channel);
+            this.channel = null;
+        }
+
         this.remoteStream = null;
         this.roomId = null;
 
@@ -402,18 +482,22 @@ class VideoChat {
      */
     disconnect() {
         this.cleanup();
-        if (this.socket) {
-            this.socket.disconnect();
-            this.socket = null;
+        if (this.presenceChannel && this.supabase) {
+            this.supabase.removeChannel(this.presenceChannel);
+            this.presenceChannel = null;
         }
-        console.log('👋 Disconnected from signaling server');
+        if (this._personalChannel && this.supabase) {
+            this.supabase.removeChannel(this._personalChannel);
+            this._personalChannel = null;
+        }
+        console.log('👋 Disconnected from Supabase Realtime');
     }
 
     /**
      * Send a text chat message
      */
     sendChatMessage(message) {
-        if (!this.socket || !this.roomId) return;
+        if (!this.channel || !this.roomId) return;
         const msgData = {
             roomId: this.roomId,
             message: message,
@@ -422,7 +506,7 @@ class VideoChat {
             type: 'text',
             timestamp: Date.now()
         };
-        this.socket.emit('chat:message', msgData);
+        this._sendToRoom('chat:message', msgData);
         return msgData;
     }
 
@@ -430,7 +514,7 @@ class VideoChat {
      * Send a voice message
      */
     sendVoiceMessage(audioBlob) {
-        if (!this.socket || !this.roomId) return;
+        if (!this.channel || !this.roomId) return;
         const reader = new FileReader();
         reader.onload = () => {
             const msgData = {
@@ -441,7 +525,7 @@ class VideoChat {
                 type: 'voice',
                 timestamp: Date.now()
             };
-            this.socket.emit('chat:voice', msgData);
+            this._sendToRoom('chat:voice', msgData);
         };
         reader.readAsDataURL(audioBlob);
     }
