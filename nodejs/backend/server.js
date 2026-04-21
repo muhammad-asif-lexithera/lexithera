@@ -831,12 +831,17 @@ function cleanupRoom(roomId) {
 // Start Server
 // ============================================
 
-// Start server
-httpServer.listen(PORT, () => {
-    console.log(`🚀 LexiThera Backend API v1.2 running on http://localhost:${PORT}`);
-    console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-    console.log(`📁 Reference library: http://localhost:${PORT}/api/references`);
-    console.log(`🎤 Compare with reference: POST http://localhost:${PORT}/api/compare-with-reference`);
-    console.log(`⚡ Simple compare: POST http://localhost:${PORT}/api/compare-simple-with-reference`);
-    console.log(`\n📂 Place reference audio files in: ${REFERENCE_AUDIO_DIR}`);
-});
+// Only start the server if not running on Vercel
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+    httpServer.listen(PORT, () => {
+        console.log(`🚀 LexiThera Backend API v1.2 running on http://localhost:${PORT}`);
+        console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+        console.log(`📁 Reference library: http://localhost:${PORT}/api/references`);
+        console.log(`🎤 Compare with reference: POST http://localhost:${PORT}/api/compare-with-reference`);
+        console.log(`⚡ Simple compare: POST http://localhost:${PORT}/api/compare-simple-with-reference`);
+        console.log(`\n📂 Place reference audio files in: ${REFERENCE_AUDIO_DIR}`);
+    });
+}
+
+// Export the app for Vercel
+export default app;
