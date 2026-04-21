@@ -3,7 +3,10 @@
   "builds": [
     {
       "src": "nodejs/backend/server.js",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["nodejs/backend/public/**", "nodejs/backend/references/**"]
+      }
     }
   ],
   "rewrites": [

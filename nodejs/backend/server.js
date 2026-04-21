@@ -55,7 +55,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/user', userRoutes);
 
 // Serve static files AFTER API routes
-app.use(express.static(join(__dirname, 'public')));
+app.use(express.static(join(__dirname, 'public'), { extensions: ['html'] }));
 app.use('/references', express.static(REFERENCE_AUDIO_DIR));
 
 
