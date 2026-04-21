@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LexiThera Voice Comparison</title>
+    <title>LexiThera - AI-Powered Speech Therapy Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -13,719 +15,435 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', sans-serif;
             background: #000000;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: #0a0a0a;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-            overflow: hidden;
-            border: 1px solid #1a1a1a;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-            border-bottom: 1px solid #00D9FF;
-        }
-
-        .header h1 {
-            font-size: 32px;
-            margin-bottom: 10px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            color: #00D9FF;
-        }
-
-        .logo {
-            width: 120px;
-            height: 120px;
-            object-fit: contain;
-            border-radius: 50%;
-            border: 3px solid #00D9FF;
-        }
-
-        .content {
-            padding: 30px;
-        }
-
-        .section {
-            margin: 25px 0;
-            padding: 25px;
-            background: #141414;
-            border-radius: 12px;
-            border-left: 3px solid #8b5cf6;
-            border: 1px solid #1f1f1f;
-        }
-
-        .section h3 {
             color: #ffffff;
-            margin-bottom: 15px;
-            font-size: 18px;
-            font-weight: 600;
+            overflow-x: hidden;
         }
 
-        .section p {
-            color: #d1d5db;
-        }
-
-        select,
-        input[type="text"] {
+        /* Background with overlay */
+        .background-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 1px solid #2a2a2a;
-            border-radius: 8px;
-            font-size: 15px;
-            transition: all 0.3s ease;
-            background: #1a1a1a;
-            color: #e5e7eb;
+            height: 100%;
+            z-index: -1;
         }
 
-        select:focus,
-        input[type="text"]:focus {
-            outline: none;
-            border-color: #8b5cf6;
-            background: #1f1f1f;
-            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        .background-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 1;
+            animation: subtle-zoom 20s ease-in-out infinite alternate;
         }
 
-        button {
-            background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
-            color: white;
-            padding: 14px 28px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            margin: 8px 5px;
-            transition: all 0.3s ease;
-        }
+        @keyframes subtle-zoom {
+            0% {
+                transform: scale(1);
+            }
 
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
-            background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
-        }
-
-        button:active {
-            transform: translateY(0);
-        }
-
-        button:disabled {
-            background: #2a2a2a;
-            cursor: not-allowed;
-            transform: none;
-            opacity: 0.5;
-        }
-
-        .recording {
-            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
-        }
-
-        .recording:hover {
-            box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
-            background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
-        }
-
-        #recordStatus {
-            margin: 15px 0;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: 500;
-            color: #d1d5db;
-        }
-
-        .recording-active {
-            background: #1f1f1f;
-            color: #ef4444;
-            border: 1px solid #dc2626;
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-
-            0%,
             100% {
-                opacity: 1;
+                transform: scale(1.05);
+            }
+        }
+
+        .background-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(20, 20, 40, 0.85) 50%, rgba(0, 0, 0, 0.9) 100%);
+            background-size: 200% 200%;
+            animation: gradient-shift 15s ease infinite;
+        }
+
+        @keyframes gradient-shift {
+            0% {
+                background-position: 0% 50%;
             }
 
             50% {
-                opacity: 0.7;
-            }
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-            display: none;
-            color: #d1d5db;
-        }
-
-        .spinner {
-            border: 4px solid #1a1a1a;
-            border-top: 4px solid #8b5cf6;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
+                background-position: 100% 50%;
             }
 
             100% {
-                transform: rotate(360deg);
+                background-position: 0% 50%;
             }
         }
 
-        #results {
-            margin-top: 30px;
-            display: none;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .stat-card {
-            background: #1a1a1a;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-            border: 1px solid #2a2a2a;
-            transition: all 0.3s ease;
-        }
-
-        .stat-card:hover {
-            border-color: #8b5cf6;
-            transform: translateY(-2px);
-        }
-
-        .stat-value {
-            font-size: 32px;
-            font-weight: bold;
-            color: #8b5cf6;
-            margin: 10px 0;
-        }
-
-        .stat-label {
-            color: #9ca3af;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .word-item {
-            padding: 15px;
-            margin: 8px 0;
-            border-radius: 8px;
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 20px 50px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: all 0.2s ease;
-            color: #e5e7eb;
-            background: #1a1a1a;
-            border: 1px solid #2a2a2a;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .word-item:hover {
-            transform: translateX(5px);
-            border-color: #3a3a3a;
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
 
-        .correct {
-            background: #0f2015;
-            border-left: 3px solid #10b981;
-            border-color: #10b981;
+        .logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid #00D9FF;
         }
 
-        .minor-error {
-            background: #2a2412;
-            border-left: 3px solid #f59e0b;
-            border-color: #f59e0b;
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00D9FF 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
-        .moderate-error {
-            background: #2a1810;
-            border-left: 3px solid #f97316;
-            border-color: #f97316;
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
         }
 
-        .major-error {
-            background: #2a1010;
-            border-left: 3px solid #ef4444;
-            border-color: #ef4444;
+        .nav-btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 25px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
         }
 
-        .status-badge {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: bold;
+        .btn-login {
+            background: transparent;
+            color: #00D9FF;
+            border: 2px solid #00D9FF;
+        }
+
+        .btn-login:hover {
+            background: #00D9FF;
+            color: #000;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 217, 255, 0.4);
+        }
+
+        .btn-register {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
             color: white;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            border: none;
         }
 
-        .badge-correct {
-            background: #10b981;
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.5);
+            background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
         }
 
-        .badge-minor {
-            background: #f59e0b;
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 100px 20px 50px;
         }
 
-        .badge-moderate {
-            background: #f97316;
+        .hero-content {
+            max-width: 900px;
+            animation: fadeInUp 1s ease;
         }
 
-        .badge-major {
-            background: #ef4444;
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 64px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #00D9FF 0%, #8b5cf6 50%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 16px;
+            color: #d1d5db;
+            margin-bottom: 40px;
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .cta-btn {
+            padding: 18px 40px;
+            font-size: 18px;
+            font-weight: 700;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(139, 92, 246, 0.6);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #00D9FF;
+            border: 2px solid #00D9FF;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 217, 255, 0.1);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(0, 217, 255, 0.3);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 80px 50px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 60px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .feature-card {
+            background: rgba(20, 20, 40, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 20px;
+            padding: 40px;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            border-color: #8b5cf6;
+            box-shadow: 0 15px 40px rgba(139, 92, 246, 0.3);
+        }
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .feature-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .feature-card h3 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #8b5cf6;
+        }
+
+        .feature-card p {
+            color: #d1d5db;
+            line-height: 1.6;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.8);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #9ca3af;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            nav {
+                padding: 15px 20px;
+            }
+
+            .logo-text {
+                font-size: 20px;
+            }
+
+            h1 {
+                font-size: 42px;
+            }
+
+            .hero p {
+                font-size: 18px;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .cta-btn {
+                width: 100%;
+                max-width: 300px;
+            }
+
+            .features {
+                padding: 60px 20px;
+            }
+
+            .section-title {
+                font-size: 32px;
+            }
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>
-                <img src="LexiThera.png" alt="LexiThera Logo" class="logo">
-                LexiThera
-            </h1>
-            <p>Record your voice and compare with reference audio</p>
-        </div>
-
-        <div class="content">
-            <div class="section">
-                <h3>1. Select Reference Audio</h3>
-                <select id="referenceSelect">
-                    <option value="">Loading references...</option>
-                </select>
-                <input type="text" id="referenceText" placeholder="Enter expected text (e.g., 'hello world')" value="">
-            </div>
-
-            <div class="section">
-                <h3>2. Record Your Voice</h3>
-                <button id="recordBtn" onclick="startRecording()">🎙️ Start Recording</button>
-                <button id="stopBtn" onclick="stopRecording()" disabled class="recording">⏹️ Stop Recording</button>
-                <div id="recordStatus"></div>
-            </div>
-
-            <div class="section">
-                <h3>3. Compare</h3>
-                <button onclick="compareAudio()">🔍 Full Analysis</button>
-                <button onclick="compareSimple()">⚡ Quick Compare</button>
-            </div>
-
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p>Processing your recording...</p>
-            </div>
-
-            <div id="results"></div>
-        </div>
+    <!-- Background -->
+    <div class="background-wrapper">
+        <img src="../background/background.jpg" alt="Background" class="background-image">
+        <div class="background-overlay"></div>
     </div>
 
-    <script>
-        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '3001'
-            ? 'http://localhost:3001'
-            : window.location.origin === 'null' || window.location.origin.includes('file://')
-                ? 'http://localhost:3001'
-                : window.location.origin;
-        let mediaRecorder;
-        let audioChunks = [];
-        let recordedBlob = null;
-        let audioContext;
-        let mediaStreamSource;
-        let processor;
-
-        // Load available references on page load
-        async function loadReferences() {
-            try {
-                const response = await fetch(`${API_URL}/api/references`);
-                const data = await response.json();
-
-                const select = document.getElementById('referenceSelect');
-                select.innerHTML = '<option value="">-- Select a reference audio --</option>';
-
-                data.references.forEach(ref => {
-                    const option = document.createElement('option');
-                    option.value = ref.id;
-                    option.textContent = ref.displayName;
-                    select.appendChild(option);
-                });
-            } catch (error) {
-                console.error('Error loading references:', error);
-                document.getElementById('referenceSelect').innerHTML =
-                    '<option value="">Error loading references</option>';
-            }
-        }
-
-        // Auto-transcribe when reference audio is selected
-        document.getElementById('referenceSelect').addEventListener('change', async function (event) {
-            const referenceId = event.target.value;
-            const referenceTextInput = document.getElementById('referenceText');
-
-            if (!referenceId) {
-                referenceTextInput.value = '';
-                return;
-            }
-
-            const originalPlaceholder = referenceTextInput.placeholder;
-
-            // Show loading state
-            referenceTextInput.value = '';
-            referenceTextInput.placeholder = '🔄 Transcribing audio...';
-            referenceTextInput.disabled = true;
-
-            try {
-                const response = await fetch(`${API_URL}/api/transcribe-reference`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ referenceId: referenceId })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    referenceTextInput.value = result.text;
-                    referenceTextInput.placeholder = originalPlaceholder;
-                    console.log('✅ Auto-transcribed:', result.text);
-                } else {
-                    alert('Error transcribing audio: ' + result.error);
-                    referenceTextInput.placeholder = originalPlaceholder;
-                }
-            } catch (error) {
-                alert('Error transcribing audio: ' + error.message);
-                referenceTextInput.placeholder = originalPlaceholder;
-            } finally {
-                referenceTextInput.disabled = false;
-            }
-        });
-
-        async function startRecording() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-                // Use AudioContext to get raw PCM data for proper WAV encoding
-                audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-                mediaStreamSource = audioContext.createMediaStreamSource(stream);
-
-                // Create a ScriptProcessorNode to capture audio buffers
-                // Buffer size 4096, 1 input channel, 1 output channel
-                processor = audioContext.createScriptProcessor(4096, 1, 1);
-
-                audioChunks = [];
-
-                processor.onaudioprocess = (e) => {
-                    // Get the left channel data (mono)
-                    const inputData = e.inputBuffer.getChannelData(0);
-                    // Clone the data because the buffer is reused
-                    audioChunks.push(new Float32Array(inputData));
-                };
-
-                mediaStreamSource.connect(processor);
-                processor.connect(audioContext.destination);
-
-                document.getElementById('recordBtn').disabled = true;
-                document.getElementById('stopBtn').disabled = false;
-                const statusDiv = document.getElementById('recordStatus');
-                statusDiv.textContent = '🔴 Recording in progress... Speak now!';
-                statusDiv.className = 'recording-active';
-
-            } catch (error) {
-                alert('Error accessing microphone: ' + error.message);
-            }
-        }
-
-        function stopRecording() {
-            if (processor && audioContext) {
-                processor.disconnect();
-                mediaStreamSource.disconnect();
-
-                // Flatten the array of Float32Arrays into a single Float32Array
-                const length = audioChunks.reduce((acc, chunk) => acc + chunk.length, 0);
-                const result = new Float32Array(length);
-                let offset = 0;
-                for (const chunk of audioChunks) {
-                    result.set(chunk, offset);
-                    offset += chunk.length;
-                }
-
-                // Encode as WAV
-                recordedBlob = encodeWAV(result, audioContext.sampleRate);
-
-                const statusDiv = document.getElementById('recordStatus');
-                statusDiv.textContent = '✅ Recording saved! Ready to compare.';
-                statusDiv.className = '';
-                document.getElementById('recordBtn').disabled = false;
-                document.getElementById('stopBtn').disabled = true;
-
-                // Close context to release resources
-                audioContext.close();
-            }
-        }
-
-        // Helper function to encode Float32Array to WAV Blob
-        function encodeWAV(samples, sampleRate) {
-            const buffer = new ArrayBuffer(44 + samples.length * 2);
-            const view = new DataView(buffer);
-
-            // RIFF identifier
-            writeString(view, 0, 'RIFF');
-            // RIFF chunk length
-            view.setUint32(4, 36 + samples.length * 2, true);
-            // WAVE identifier
-            writeString(view, 8, 'WAVE');
-            // fmt chunk identifier
-            writeString(view, 12, 'fmt ');
-            // fmt chunk length
-            view.setUint32(16, 16, true);
-            // Sample format (1 is PCM)
-            view.setUint16(20, 1, true);
-            // Stereo (1 channel)
-            view.setUint16(22, 1, true);
-            // Sample rate
-            view.setUint32(24, sampleRate, true);
-            // Byte rate (sampleRate * blockAlign)
-            view.setUint32(28, sampleRate * 2, true);
-            // Block align (channelCount * bytesPerSample)
-            view.setUint16(32, 2, true);
-            // Bits per sample
-            view.setUint16(34, 16, true);
-            // data chunk identifier
-            writeString(view, 36, 'data');
-            // data chunk length
-            view.setUint32(40, samples.length * 2, true);
-
-            // Write the PCM samples
-            floatTo16BitPCM(view, 44, samples);
-
-            return new Blob([view], { type: 'audio/wav' });
-        }
-
-        function writeString(view, offset, string) {
-            for (let i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i));
-            }
-        }
-
-        function floatTo16BitPCM(output, offset, input) {
-            for (let i = 0; i < input.length; i++, offset += 2) {
-                const s = Math.max(-1, Math.min(1, input[i]));
-                output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-            }
-        }
-
-        async function compareAudio() {
-            const referenceId = document.getElementById('referenceSelect').value;
-            const referenceText = document.getElementById('referenceText').value;
-
-            if (!referenceId) {
-                alert('Please select a reference audio');
-                return;
-            }
-
-            if (!recordedBlob) {
-                alert('Please record your voice first');
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('referenceId', referenceId);
-            if (referenceText) {
-                formData.append('referenceText', referenceText);
-            }
-            formData.append('userAudio', recordedBlob, 'recording.wav');
-
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('results').style.display = 'none';
-
-            try {
-                const response = await fetch(`${API_URL}/api/compare-with-reference`, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await response.json();
-                displayResults(result);
-            } catch (error) {
-                alert('Error: ' + error.message);
-            } finally {
-                document.getElementById('loading').style.display = 'none';
-            }
-        }
-
-        async function compareSimple() {
-            const referenceId = document.getElementById('referenceSelect').value;
-
-            if (!referenceId) {
-                alert('Please select a reference audio');
-                return;
-            }
-
-            if (!recordedBlob) {
-                alert('Please record your voice first');
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('referenceId', referenceId);
-            formData.append('userAudio', recordedBlob, 'recording.wav');
-
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('results').style.display = 'none';
-
-            try {
-                const response = await fetch(`${API_URL}/api/compare-simple-with-reference`, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await response.json();
-                displaySimpleResults(result);
-            } catch (error) {
-                alert('Error: ' + error.message);
-            } finally {
-                document.getElementById('loading').style.display = 'none';
-            }
-        }
-
-        function displayResults(result) {
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.style.display = 'block';
-
-            if (!result.success) {
-                resultsDiv.innerHTML = `<div class="section" style="background:#2a1010; border-color:#ef4444;"><h3>Error</h3><p>${result.error}</p></div>`;
-                return;
-            }
-
-            let html = `
-        <div class="section">
-          <h3>📊 Overall Results</h3>
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-label">Accuracy</div>
-              <div class="stat-value">${result.overall.accuracy}%</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Correct Words</div>
-              <div class="stat-value" style="color:#10b981;">${result.overall.correctWords}</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Errors</div>
-              <div class="stat-value" style="color:#ef4444;">${result.overall.errorWords}</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Confidence</div>
-              <div class="stat-value">${result.overall.averageConfidence}%</div>
-            </div>
-          </div>
+    <!-- Navigation -->
+    <nav>
+        <div class="logo-section">
+            <img src="LexiThera.png" alt="LexiThera Logo" class="logo">
+            <span class="logo-text">LexiThera</span>
         </div>
-
-        <div class="section">
-          <h3>📝 Transcription</h3>
-          <p><strong>Expected:</strong> ${result.transcription.reference || 'N/A'}</p>
-          <p><strong>You said:</strong> ${result.transcription.user}</p>
+        <div class="nav-buttons">
+            <a href="login.html" class="nav-btn btn-login">Login</a>
+            <a href="patient-register.html" class="nav-btn btn-register">Register</a>
         </div>
+    </nav>
 
-        <div class="section">
-          <h3>🔍 Word-by-Word Analysis</h3>
-      `;
-
-            result.wordAnalysis.forEach(word => {
-                const className = word.hasError ?
-                    (word.severity === 'minor' ? 'minor-error' :
-                        word.severity === 'moderate' ? 'moderate-error' : 'major-error') :
-                    'correct';
-
-                const badgeClass = word.hasError ?
-                    (word.severity === 'minor' ? 'badge-minor' :
-                        word.severity === 'moderate' ? 'badge-moderate' : 'badge-major') :
-                    'badge-correct';
-
-                html += `
-          <div class="word-item ${className}">
-            <div>
-              <strong style="font-size:16px;">${word.referenceWord || word.userWord}</strong>
-              ${word.userWord !== word.referenceWord && word.userWord ?
-                        `<br><small>You said: "${word.userWord}"</small>` : ''}
-              ${word.dtwDistance ?
-                        `<br><small style="color:#9ca3af;">DTW Distance: ${word.dtwDistance.toFixed(1)}</small>` : ''}
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>
+                Transform Your Speech with
+                <span class="gradient-text">AI-Powered Therapy</span>
+            </h1>
+            <p>
+                LexiThera uses cutting-edge artificial intelligence to provide personalized speech therapy.
+                Practice at your own pace, track your progress, and connect with expert consultants.
+            </p>
+            <div class="cta-buttons">
+                <a href="patient-register.html" class="cta-btn btn-primary">Get Started Free</a>
+                <a href="login.html" class="cta-btn btn-secondary">Login to Dashboard</a>
             </div>
-            <div style="text-align:right;">
-              <span class="status-badge ${badgeClass}">${word.severity.toUpperCase()}</span>
-              ${word.confidence ?
-                        `<br><small>${word.confidence.toFixed(0)}% confidence</small>` : ''}
-            </div>
-          </div>
-        `;
-            });
-
-            html += `</div>`;
-            resultsDiv.innerHTML = html;
-        }
-
-        function displaySimpleResults(result) {
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.style.display = 'block';
-
-            if (!result.success) {
-                resultsDiv.innerHTML = `<div class="section" style="background:#2a1010; border-color:#ef4444;"><h3>Error</h3><p>${result.error}</p></div>`;
-                return;
-            }
-
-            const icon = result.hasError ? '❌' : '✅';
-            const color = result.hasError ? '#ef4444' : '#10b981';
-
-            resultsDiv.innerHTML = `
-        <div class="section">
-          <h3>⚡ Quick Comparison Results</h3>
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-label">Status</div>
-              <div class="stat-value" style="color:${color};">${icon}</div>
-              <div class="stat-label">${result.severity.toUpperCase()}</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">DTW Distance</div>
-              <div class="stat-value">${result.dtwDistance.toFixed(1)}</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Confidence</div>
-              <div class="stat-value">${result.confidence.toFixed(0)}%</div>
-            </div>
-          </div>
-          <p style="margin-top:20px;"><strong>Reference:</strong> ${result.referenceId}</p>
         </div>
-      `;
-        }
+    </section>
 
-        // Load references when page loads
-        loadReferences();
-    </script>
+    <!-- Features Section -->
+    <section class="features">
+        <h2 class="section-title">Why Choose <span class="gradient-text">LexiThera</span>?</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <img src="features/Analytics.png" alt="AI-Powered Analysis">
+                </div>
+                <h3>AI-Powered Analysis</h3>
+                <p>Advanced voice comparison technology provides instant feedback on your pronunciation and speech
+                    patterns.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <img src="features/Progress.png" alt="Progress Tracking">
+                </div>
+                <h3>Progress Tracking</h3>
+                <p>Visualize your improvement over time with detailed analytics and comprehensive progress reports.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="font-size: 64px;">💬</div>
+                <h3>Live Sessions</h3>
+                <p>Connect with certified speech consultants for personalized guidance and real-time feedback.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <img src="features/Practice.png" alt="Personalized Practice">
+                </div>
+                <h3>Personalized Practice</h3>
+                <p>Custom exercises tailored to your specific needs and speech therapy goals.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <img src="features/Secured.png" alt="Secure & Private">
+                </div>
+                <h3>Secure & Private</h3>
+                <p>Your data is protected with enterprise-grade security and privacy measures.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <img src="features/Feedback.png" alt="Instant Feedback">
+                </div>
+                <h3>Instant Feedback</h3>
+                <p>Get immediate results and suggestions to improve your speech in real-time.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p> AI-Powered Speech Therapy Platform | Developed by Muhammad Asif
+        </p>
+    </footer>
 </body>
 
 </html>
