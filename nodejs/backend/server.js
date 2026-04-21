@@ -55,14 +55,14 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/user', userRoutes);
 
 // Serve static files AFTER API routes
-app.use(express.static('public'));
+app.use(express.static(join(__dirname, 'public')));
 app.use('/references', express.static(REFERENCE_AUDIO_DIR));
 
 
 // Configure multer for user audio uploads only
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/');
+        cb(null, join(__dirname, 'uploads'));
     },
     filename: (req, file, cb) => {
         cb(null, Date.now() + '-' + file.originalname);
