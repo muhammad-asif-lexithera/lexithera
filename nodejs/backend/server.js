@@ -13,9 +13,9 @@ import { pipeline } from '@xenova/transformers';
 import dotenv from 'dotenv';
 
 // Import our MFCC and DTW modules
-import { computeMFCC } from '../lib/mfcc.js';
-import { dtwDistance } from '../lib/dtw.js';
-import { resampleAudio } from '../lib/utils.js';
+import { computeMFCC } from './lib/mfcc.js';
+import { dtwDistance } from './lib/dtw.js';
+import { resampleAudio } from './lib/utils.js';
 
 // Import authentication system
 import { initializeDatabase, supabase } from './database.js';
