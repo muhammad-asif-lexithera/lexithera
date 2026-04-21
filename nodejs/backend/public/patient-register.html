@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Registration - LexiThera</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #000000;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* Background */
+        .background-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .background-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.2;
+        }
+
+        .background-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(20, 20, 40, 0.9) 100%);
+        }
+
+        .register-container {
+            max-width: 500px;
+            width: 100%;
+            background: rgba(15, 15, 30, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            animation: fadeInUp 0.6s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid #8b5cf6;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #00D9FF 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #9ca3af;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #d1d5db;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            background: rgba(0, 0, 0, 0.7);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(139, 92, 246, 0.5);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 25px;
+            color: #9ca3af;
+            font-size: 14px;
+        }
+
+        .login-link a {
+            color: #8b5cf6;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .login-link a:hover {
+            color: #a78bfa;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #00D9FF;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            color: #8b5cf6;
+            transform: translateX(-3px);
+        }
+
+        .success-message {
+            display: none;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #10b981;
+            color: #10b981;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .error-message {
+            display: none;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #ef4444;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 600px) {
+            .register-container {
+                padding: 30px 25px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Background -->
+    <div class="background-wrapper">
+        <img src="../background/background.jpg" alt="Background" class="background-image">
+        <div class="background-overlay"></div>
+    </div>
+
+    <div class="register-container">
+        <a href="landing.html" class="back-btn">← Back to Home</a>
+
+        <div class="header">
+            <img src="LexiThera.png" alt="LexiThera Logo" class="logo">
+            <h1>Patient Registration</h1>
+            <p class="subtitle">Join LexiThera and start your speech therapy journey</p>
+        </div>
+
+        <div class="success-message" id="successMessage"></div>
+        <div class="error-message" id="errorMessage"></div>
+
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="fullName">Full Name *</label>
+                <input type="text" id="fullName" required placeholder="Enter your full name">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address *</label>
+                <input type="email" id="email" required placeholder="you@example.com">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="password">Password *</label>
+                    <input type="password" id="password" required placeholder="Min. 8 characters">
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password *</label>
+                    <input type="password" id="confirmPassword" required placeholder="Confirm password">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" placeholder="+92 (3) 000-0000">
+                </div>
+                <div class="form-group">
+                    <label for="dob">Date of Birth</label>
+                    <input type="date" id="dob">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="medicalHistory">Medical History (Optional)</label>
+                <textarea id="medicalHistory"
+                    placeholder="Any relevant medical information or speech-related conditions..."></textarea>
+            </div>
+
+            <button type="submit" class="submit-btn">Create Account</button>
+        </form>
+
+        <div class="login-link">
+            Already have an account? <a href="login.html">Login here</a>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '3001'
+            ? 'http://localhost:3001'
+            : window.location.origin === 'null' || window.location.origin.includes('file://')
+                ? 'http://localhost:3001'
+                : window.location.origin;
+
+        document.getElementById('registerForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const errorMessage = document.getElementById('errorMessage');
+            const submitBtn = e.target.querySelector('.submit-btn');
+
+            // Reset messages
+            errorMessage.style.display = 'none';
+
+            // Validate password length
+            if (password.length < 8) {
+                errorMessage.textContent = 'Password must be at least 8 characters long';
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+            // Validate password match
+            if (password !== confirmPassword) {
+                errorMessage.textContent = 'Passwords do not match';
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating Account...';
+
+            try {
+                // Send registration request to backend
+                const response = await fetch(`${API_URL}/api/auth/register/patient`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: document.getElementById('email').value,
+                        password: password,
+                        fullName: document.getElementById('fullName').value,
+                        phone: document.getElementById('phone').value || null,
+                        dob: document.getElementById('dob').value || null,
+                        medicalHistory: document.getElementById('medicalHistory').value || null
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Registration complete - show success message
+                    const container = document.querySelector('.register-container');
+                    container.innerHTML = `
+                        <style>
+                            @keyframes checkmark-draw {
+                                0% { stroke-dashoffset: 50; }
+                                100% { stroke-dashoffset: 0; }
+                            }
+                            @keyframes circle-draw {
+                                0% { stroke-dashoffset: 166; }
+                                100% { stroke-dashoffset: 0; }
+                            }
+                            @keyframes scale-bounce {
+                                0% { transform: scale(0); opacity: 0; }
+                                50% { transform: scale(1.2); }
+                                100% { transform: scale(1); opacity: 1; }
+                            }
+                            @keyframes pulse-glow {
+                                0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.4), 0 0 40px rgba(139, 92, 246, 0.2); }
+                                50% { box-shadow: 0 0 30px rgba(139, 92, 246, 0.6), 0 0 60px rgba(139, 92, 246, 0.3); }
+                            }
+                            @keyframes hourglass-rotate {
+                                0% { transform: rotate(0deg); }
+                                25% { transform: rotate(180deg); }
+                                50% { transform: rotate(180deg); }
+                                75% { transform: rotate(360deg); }
+                                100% { transform: rotate(360deg); }
+                            }
+                            @keyframes sand-flow {
+                                0%, 100% { opacity: 0.3; }
+                                50% { opacity: 1; }
+                            }
+                            .success-icon-container {
+                                display: inline-flex;
+                                align-items: center;
+                                justify-content: center;
+                                width: 120px;
+                                height: 120px;
+                                border-radius: 50%;
+                                background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(167, 139, 250, 0.1) 100%);
+                                margin-bottom: 25px;
+                                animation: scale-bounce 0.6s ease forwards, pulse-glow 2s ease-in-out infinite 0.6s;
+                            }
+                            .success-icon-container svg {
+                                animation: hourglass-rotate 3s ease-in-out infinite;
+                            }
+                            .hourglass-sand {
+                                animation: sand-flow 1.5s ease-in-out infinite;
+                            }
+                            .success-checkmark {
+                                stroke-dasharray: 50;
+                                stroke-dashoffset: 50;
+                                animation: checkmark-draw 0.5s ease forwards 0.8s;
+                            }
+                            .success-circle {
+                                stroke-dasharray: 166;
+                                stroke-dashoffset: 166;
+                                animation: circle-draw 0.8s ease forwards 0.3s;
+                            }
+
+                        </style>
+                        <div style="text-align: center; padding: 40px 20px;">
+                            <div style="position: relative; display: inline-block;">
+                                <div class="success-icon-container">
+                                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <!-- Hourglass Body -->
+                                        <path d="M6 2h12v4l-4 4 4 4v4H6v-4l4-4-4-4V2z" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="rgba(139, 92, 246, 0.1)"/>
+                                        <!-- Top Sand -->
+                                        <path class="hourglass-sand" d="M8 4h8v2l-3 3h-2L8 6V4z" fill="rgba(139, 92, 246, 0.6)"/>
+                                        <!-- Bottom Sand -->
+                                        <path class="hourglass-sand" d="M8 18h8v-2l-3-3h-2l-3 3v2z" fill="rgba(139, 92, 246, 0.4)"/>
+                                        <!-- Middle Sand Flow -->
+                                        <line class="hourglass-sand" x1="12" y1="10" x2="12" y2="14" stroke="#8b5cf6" stroke-width="1" stroke-linecap="round"/>
+                                    </svg>
+                                </div>
+
+                            </div>
+                            <h2 style="color: #8b5cf6; margin-bottom: 15px; font-size: 24px;">Registration Complete</h2>
+                            <p style="color: #d1d5db; line-height: 1.6; margin-bottom: 30px; font-size: 15px;">
+                                Your account has been created successfully.<br>
+                                It is currently <strong style="color: #8b5cf6;">awaiting administrator approval</strong>.<br>
+                                You will be able to log in once your request is reviewed.
+                            </p>
+                            <a href="login.html" class="submit-btn" style="display: inline-block; text-decoration: none; width: auto; padding: 12px 40px; border-radius: 12px; background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);">Return to Login</a>
+                        </div>
+                    `;
+                    // Clear any local storage that might have been set by mistake
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                } else {
+                    // Show error message
+                    errorMessage.textContent = data.error || 'Registration failed';
+                    errorMessage.style.display = 'block';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Create Account';
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                errorMessage.textContent = 'Network error. Please check your connection.';
+                errorMessage.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Account';
+            }
+        });
+    </script>
+</body>
+
+</html>

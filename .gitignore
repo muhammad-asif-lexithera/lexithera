@@ -1,36 +1,50 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Dependencies
+node_modules/
+dist/
+build/
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
+# Environment Variables (CRITICAL)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# testing
-/coverage
+# Databases
+lexithera.db
+database.sqlite
+*.sqlite
+*.db-journal
 
-# next.js
-/.next/
-/out/
+# Local Storage / Uploads
+nodejs/backend/uploads/*
+!nodejs/backend/uploads/.gitkeep
+nodejs/backend/references/*
+!nodejs/backend/references/.gitkeep
 
-# production
-/build
+# AI/Model Caches
+nodejs/feature_cache/
+nodejs/model_metadata.json
+nodejs/best_config.json
 
-# misc
+# IDEs and Tools
+.vscode/
+.idea/
 .DS_Store
-*.pem
+Thumbs.db
+.qodo/
 
-# debug
+# AI/Model Data and Datasets
+nodejs/model.json
+nodejs/labels.json
+nodejs/model_templates/
+nodejs/feature_cache/
+nodejs/model_metadata.json
+nodejs/best_config.json
+
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# local env files
-.env*.local
-.env
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+logs/
+*.log
