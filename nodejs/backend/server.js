@@ -10,8 +10,6 @@ import { fileURLToPath } from 'url';
 import * as wavDecoder from 'wav-decoder';
 import { MPEGDecoder } from 'mpg123-decoder';
 import { pipeline } from '@xenova/transformers';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
 import dotenv from 'dotenv';
 
 // Import our MFCC and DTW modules
@@ -36,13 +34,6 @@ const REFERENCE_AUDIO_DIR = join(__dirname, 'references');
 
 
 const app = express();
-const httpServer = createServer(app);
-const io = new Server(httpServer, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-    }
-});
 const PORT = process.env.PORT || 3001;
 
 // Initialize database
@@ -629,201 +620,20 @@ app.use('/api/*', (req, res) => {
     res.status(404).json({ success: false, error: `Route ${req.originalUrl} not found` });
 });
 
-// Create necessary directories
-try {
-    await mkdir('uploads', { recursive: true });
-    await mkdir(REFERENCE_AUDIO_DIR, { recursive: true });
-    await mkdir('public', { recursive: true });
-    console.log('✓ Directories created');
-} catch (err) {
-    console.log('✓ Directories already exist');
-}
 
 // ============================================
-// WebRTC Signaling Server with Socket.io
+// Directory Setup (Local Only)
 // ============================================
 
-// Track active users and rooms
-const activeUsers = new Map(); // userId -> { socketId, role, name, room }
-const activeRooms = new Map(); // roomId -> { patient, consultant, status }
-
-io.on('connection', (socket) => {
-    console.log(`🔌 New connection: ${socket.id}`);
-
-    // User joins with their info
-    socket.on('user:join', ({ userId, role, name }) => {
-        const id = String(userId);
-        activeUsers.set(id, {
-            socketId: socket.id,
-            role,
-            name,
-            room: null
-        });
-        socket.userId = id;
-        socket.role = role;
-        socket.userName = name;
-
-        console.log(`👤 User joined: ${name} (${role}) - ${userId}`);
-
-        // Broadcast updated user list
-        io.emit('users:list', Array.from(activeUsers.entries()).map(([id, data]) => ({
-            userId: id,
-            name: data.name,
-            role: data.role,
-            inCall: data.room !== null
-        })));
-
-        console.log(`📊 Active users: ${activeUsers.size}`);
-    });
-
-    // Initiate call (from patient or consultant)
-    socket.on('call:initiate', ({ targetUserId, roomId }) => {
-        const caller = activeUsers.get(String(socket.userId));
-        const target = activeUsers.get(String(targetUserId));
-
-        if (!target) {
-            socket.emit('call:error', { message: 'Target user not found' });
-            return;
-        }
-
-        // Create room
-        activeRooms.set(roomId, {
-            patient: String(caller.role === 'patient' ? socket.userId : targetUserId),
-            consultant: String(caller.role === 'consultant' ? socket.userId : targetUserId),
-            status: 'ringing'
-        });
-
-        // Update user room info
-        caller.room = roomId;
-        target.room = roomId;
-
-        // Join socket rooms
-        socket.join(roomId);
-        io.to(target.socketId).socketsJoin(roomId);
-
-        // Notify target user of incoming call
-        io.to(target.socketId).emit('call:incoming', {
-            callerId: socket.userId,
-            callerName: caller.name,
-            callerRole: caller.role,
-            roomId
-        });
-
-        console.log(`📞 [${roomId}] Call initiated: ${caller.name} (${socket.userId}) -> ${target.name} (${targetUserId})`);
-    });
-
-    // Accept call
-    socket.on('call:accept', ({ roomId }) => {
-        const room = activeRooms.get(roomId);
-        if (room) {
-            room.status = 'active';
-            io.to(roomId).emit('call:accepted', { roomId });
-            console.log(`✅ [${roomId}] Call accepted`);
-        } else {
-            console.log(`⚠️ [${roomId}] Accept failed: Room not found`);
-        }
-    });
-
-    socket.on('call:reject', ({ roomId }) => {
-        const room = activeRooms.get(roomId);
-        if (room) {
-            io.to(roomId).emit('call:rejected', { roomId });
-            cleanupRoom(roomId);
-            console.log(`❌ [${roomId}] Call rejected by ${socket.userId}`);
-        } else {
-            console.log(`⚠️ [${roomId}] Reject failed: Room not found`);
-        }
-    });
-
-    // WebRTC Signaling: Offer
-    socket.on('webrtc:offer', ({ offer, roomId }) => {
-        socket.to(roomId).emit('webrtc:offer', {
-            offer,
-            senderId: socket.userId
-        });
-        console.log(`📤 WebRTC offer sent in room: ${roomId}`);
-    });
-
-    // WebRTC Signaling: Answer
-    socket.on('webrtc:answer', ({ answer, roomId }) => {
-        socket.to(roomId).emit('webrtc:answer', {
-            answer,
-            senderId: socket.userId
-        });
-        console.log(`📥 WebRTC answer sent in room: ${roomId}`);
-    });
-
-    // WebRTC Signaling: ICE Candidate
-    socket.on('webrtc:ice-candidate', ({ candidate, roomId }) => {
-        socket.to(roomId).emit('webrtc:ice-candidate', {
-            candidate,
-            senderId: socket.userId
-        });
-    });
-
-    // End call
-    socket.on('call:end', ({ roomId }) => {
-        io.to(roomId).emit('call:ended', { roomId });
-        cleanupRoom(roomId);
-        console.log(`📴 Call ended in room: ${roomId}`);
-    });
-
-    // Chat events
-    socket.on('chat:message', (data) => {
-        // data: { roomId, message, senderName, senderId, type: 'text' }
-        socket.to(data.roomId).emit('chat:message', data);
-        console.log(`💬 Chat message in ${data.roomId} from ${data.senderName}`);
-    });
-
-    socket.on('chat:voice', (data) => {
-        // data: { roomId, audioBlob, senderName, senderId, type: 'voice' }
-        socket.to(data.roomId).emit('chat:voice', data);
-        console.log(`🎤 Voice message in ${data.roomId} from ${data.senderName}`);
-    });
-
-    // Handle disconnect
-    socket.on('disconnect', () => {
-        console.log(`🔌 Disconnected: ${socket.id}`);
-
-        if (socket.userId) {
-            const user = activeUsers.get(socket.userId);
-
-            // If user was in a call, end it
-            if (user && user.room) {
-                io.to(user.room).emit('call:ended', {
-                    roomId: user.room,
-                    reason: 'User disconnected'
-                });
-                cleanupRoom(user.room);
-            }
-
-            // Remove user
-            activeUsers.delete(socket.userId);
-
-            // Broadcast updated user list
-            io.emit('users:list', Array.from(activeUsers.entries()).map(([id, data]) => ({
-                userId: id,
-                name: data.name,
-                role: data.role,
-                inCall: data.room !== null
-            })));
-        }
-    });
-});
-
-// Helper function to cleanup room
-function cleanupRoom(roomId) {
-    const room = activeRooms.get(roomId);
-    if (room) {
-        // Clear room info from users
-        const patientData = activeUsers.get(room.patient);
-        const consultantData = activeUsers.get(room.consultant);
-
-        if (patientData) patientData.room = null;
-        if (consultantData) consultantData.room = null;
-
-        // Remove room
-        activeRooms.delete(roomId);
+// Only create directories if not running on Vercel
+if (!process.env.VERCEL) {
+    try {
+        await mkdir('uploads', { recursive: true });
+        await mkdir(REFERENCE_AUDIO_DIR, { recursive: true });
+        await mkdir('public', { recursive: true });
+        console.log('✓ Directories created');
+    } catch (err) {
+        console.log('✓ Directories already exist');
     }
 }
 
@@ -833,7 +643,7 @@ function cleanupRoom(roomId) {
 
 // Only start the server if not running on Vercel
 if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-    httpServer.listen(PORT, () => {
+    app.listen(PORT, () => {
         console.log(`🚀 LexiThera Backend API v1.2 running on http://localhost:${PORT}`);
         console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
         console.log(`📁 Reference library: http://localhost:${PORT}/api/references`);
