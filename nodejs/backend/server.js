@@ -9,8 +9,9 @@ import { join, dirname, basename } from 'path';
 import { fileURLToPath } from 'url';
 import * as wavDecoder from 'wav-decoder';
 import { MPEGDecoder } from 'mpg123-decoder';
-import { pipeline } from '@xenova/transformers';
+import { pipeline, env } from '@xenova/transformers';
 import dotenv from 'dotenv';
+import os from 'os';
 
 // Import our MFCC and DTW modules
 import { computeMFCC } from './lib/mfcc.js';
@@ -25,6 +26,11 @@ import userRoutes from './routes/user.js';
 
 // Load environment variables
 dotenv.config();
+
+// Set transformers cache to use /tmp on Vercel
+if (process.env.VERCEL) {
+    env.cacheDir = os.tmpdir();
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -62,7 +68,7 @@ app.use('/references', express.static(REFERENCE_AUDIO_DIR));
 // Configure multer for user audio uploads only
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, join(__dirname, 'uploads'));
+        cb(null, process.env.VERCEL ? os.tmpdir() : join(__dirname, 'uploads'));
     },
     filename: (req, file, cb) => {
         cb(null, Date.now() + '-' + file.originalname);
@@ -618,6 +624,12 @@ app.get('/api/health', (req, res) => {
 app.use('/api/*', (req, res) => {
     console.log(`[${new Date().toLocaleTimeString()}] 404 NOT FOUND: ${req.method} ${req.originalUrl}`);
     res.status(404).json({ success: false, error: `Route ${req.originalUrl} not found` });
+});
+
+// Generic 500 API Error Handler
+app.use('/api/*', (err, req, res, next) => {
+    console.error('Unhandled API Error:', err);
+    res.status(500).json({ success: false, error: err.message || 'Internal Server Error' });
 });
 
 
