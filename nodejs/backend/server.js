@@ -281,8 +281,21 @@ app.post('/api/references', upload.single('audio'), async (req, res) => {
         // Delete local temp file
         await unlink(oldPath).catch(() => {});
 
+        // Get max ID to avoid sequence issues
+        const { data: maxIdData } = await supabase
+            .from('reference_audios')
+            .select('id')
+            .order('id', { ascending: false })
+            .limit(1);
+        
+        let newId = 1;
+        if (maxIdData && maxIdData.length > 0) {
+            newId = maxIdData[0].id + 1;
+        }
+
         // Insert into DB
         const { error: dbErr } = await supabase.from('reference_audios').insert([{
+            id: newId,
             filename: filename,
             display_name: displayName || filename,
             difficulty: difficulty || 'Basic'
