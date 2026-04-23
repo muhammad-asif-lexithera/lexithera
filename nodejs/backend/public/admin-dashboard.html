@@ -1646,7 +1646,10 @@
                         <div class="record-name">🎙️ ${r.displayName}</div>
                         <div class="record-meta">Difficulty: <span class="badge-difficulty ${r.difficulty}">${r.difficulty}</span> • ID: ${r.id}</div>
                     </div>
-                    <button class="btn-action btn-edit" onclick="playAudio('${API_URL}${r.path}')">Play</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn-action btn-edit" onclick="playAudio('${r.path}', this)">Play</button>
+                        <button class="btn-action btn-delete" onclick="deleteReference('${r.id}')">Delete</button>
+                    </div>
                 </div>
             `).join('') : '<div style="text-align: center; padding: 20px; color: #9ca3af;">No reference audios found</div>';
         }
@@ -1699,9 +1702,55 @@
             initCharts(analytics);
         }
 
-        function playAudio(url) {
-            const audio = new Audio(url);
-            audio.play();
+        let currentAdminAudio = null;
+        let currentAdminPlayBtn = null;
+
+        function playAudio(url, btn) {
+            if (currentAdminAudio) {
+                currentAdminAudio.pause();
+                currentAdminAudio.currentTime = 0;
+                if (currentAdminPlayBtn) currentAdminPlayBtn.textContent = 'Play';
+            }
+
+            if (currentAdminPlayBtn === btn && btn.textContent === 'Stop') {
+                currentAdminPlayBtn = null;
+                return;
+            }
+
+            currentAdminAudio = new Audio(url);
+            currentAdminPlayBtn = btn;
+            btn.textContent = 'Stop';
+
+            currentAdminAudio.play().catch(err => {
+                console.error('Playback error:', err);
+                btn.textContent = 'Play';
+                alert('Could not play audio file.');
+            });
+
+            currentAdminAudio.onended = () => {
+                btn.textContent = 'Play';
+                currentAdminPlayBtn = null;
+            };
+        }
+
+        async function deleteReference(id) {
+            if (!confirm('Are you sure you want to delete this reference audio?')) return;
+            try {
+                const response = await fetch(`${API_URL}/api/references/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}` }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showSuccessModal('Reference audio deleted successfully', 'Deleted');
+                    fetchReferences();
+                } else {
+                    alert('Error deleting reference: ' + data.error);
+                }
+            } catch (err) {
+                console.error('Error deleting reference:', err);
+                alert('Connection error');
+            }
         }
 
         // --- Modals for Upload and Assign Goal ---

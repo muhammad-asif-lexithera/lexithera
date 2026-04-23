@@ -315,6 +315,39 @@ app.post('/api/references', upload.single('audio'), async (req, res) => {
 });
 
 /**
+ * DELETE /api/references/:id
+ * Delete a reference audio file from DB and Storage
+ */
+app.delete('/api/references/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Find DB record
+        const { data: ref, error: findErr } = await supabase
+            .from('reference_audios')
+            .select('*')
+            .eq('filename', id)
+            .single();
+            
+        if (findErr) throw new Error(findErr.message);
+        if (!ref) return res.status(404).json({ success: false, error: 'Reference not found' });
+        
+        // Delete from storage
+        const { error: storageErr } = await supabase.storage.from('references').remove([id]);
+        if (storageErr) console.error('Storage deletion error:', storageErr);
+        
+        // Delete from DB
+        const { error: dbErr } = await supabase.from('reference_audios').delete().eq('filename', id);
+        if (dbErr) throw new Error(dbErr.message);
+        
+        res.json({ success: true, message: 'Reference deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting reference:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
  * POST /api/transcribe-reference
  * Transcribe a reference audio file and return the text
  * Body: { referenceId: string }
